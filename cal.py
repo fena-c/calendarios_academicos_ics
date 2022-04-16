@@ -65,8 +65,6 @@ else:
 
 
 
-lista_calendarios = generar_calendario_completo(lineas_traducidas)
-
 
 for calendario in lista_calendarios:
     f = open(f"{calendario}.ics", "wb")
