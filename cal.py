@@ -25,8 +25,8 @@ if len(archivos_pdf) == 0:
             " académico en la misma dirección que este programa")
     exit()
 
+i = 1
 for candidato in archivos_pdf:
-    i = 1
     print(f"[{i}] {candidato}")
     i += 1
 
