@@ -1,4 +1,4 @@
-from funciones import separar_por_lineas, ordenar_eventos, calibrar_fecha, lista_comunidad, generar_calendario_completo, generar_calendario_simple, traducir_pdf
+from funciones import corregir_lineas, ordenar_eventos, calibrar_fecha, lista_comunidad, generar_calendario_completo, generar_calendario_simple, traducir_pdf
 import os
 
 #Se abre el pdf

@@ -3,27 +3,99 @@ import PyPDF2
 from icalendar import Calendar, Event
 from datetime import date
 import pytz
-def separar_por_lineas(txt):
+
+
+def dividir_en_categorias(txt):
+
+    dias = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
+    #print(txt)
+
+    bits = txt.split(" ")
+    if "2022" in bits[1].split("-"):
+        bits[1] = bits[1][0:7] + "22"
+
+    bits2 = []
+    bits2.append(" ".join(bits[0:2]))
+    if bits[2] in dias:
+        bits2.append(" ".join(bits[2:4]))
+        if bits[4:5] == "Comunidad": 
+            bits2.append(" ".join(bits[4:6]))
+            bits2.append(" ".join(bits[6:]))
+        elif " ".join(bits[4:6]) == "Estudiante Nuevo":
+            bits2.append(" ".join(bits[4:6]))
+            bits2.append(" ".join(bits[6:]))
+        elif " ".join(bits[4:6]) == "Estudiante College":
+            bits2.append(" ".join(bits[4:6]))
+            bits2.append(" ".join(bits[6:]))
+        elif " ".join(bits[4:6]) == "Estudiante de":
+            bits2.append(" ".join(bits[4:10]))
+            bits2.append(" ".join(bits[10:]))
+        else:
+            bits2.append(" ".join(bits[4:5]))
+            bits2.append(" ".join(bits[5:]))
+
+    else:
+        if bits[2] == "Comunidad": 
+            bits2.append(" ".join(bits[2:4]))
+            bits2.append(" ".join(bits[4:]))
+        elif " ".join(bits[2:4]) == "Estudiante Nuevo":
+            bits2.append(" ".join(bits[2:4]))
+            bits2.append(" ".join(bits[4:]))
+        elif " ".join(bits[2:4]) == "Estudiante College":
+            bits2.append(" ".join(bits[2:4]))
+            bits2.append(" ".join(bits[4:]))
+        elif " ".join(bits[2:4]) == "Estudiante de":
+            bits2.append(" ".join(bits[2:8]))
+            bits2.append(" ".join(bits[8:]))
+        else:
+            bits2.append(bits[2])
+            bits2.append(" ".join(bits[3:]))
+
+    #print(bits2)
+    return bits2
+
+
+def corregir_lineas(txt):
+    #print(txt)
+    txt = " ".join(txt)
+    #print(txt)
+    #old:
     #Cuando se lee el pdf, se genera una línea por cada elemento de
     #una fila en el archivo pdf. Lo que hace esta función es 
     #generar una lista que contiene las filas del archivo pdf
+
+    #new:
+    #al parecer ya genera una lista. Lo que va a pasar ahora es limpiar las líneas
+    #Pasar de "FacultadUnidades Académicas no se cuanto" => "Facultad Unidades académicas no se cuanto"
 
     posiciones = []
     posicion = 0
     
     #Se marcan las líneas que parten por una fecha
-    for i in txt:
-        if i[0:3] in ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]:
-            posiciones.append(posicion)
+    for i in range(len(txt)):
+        if txt[i:i+4] in ["lun ", "mar ", "mié ", "jue ", "vie ", "sáb ", "dom "]:
+            if txt[i+4].isdigit():
+                posiciones.append(posicion)
         posicion += 1
+    
     
     #Si en las posiciones se tiene algo del estilo [..., 5, 6, ...]
     #significa que el 6 corresponde a la fecha de término del evento
     #entonces se elimina el 6
     for i in posiciones:
         if i < int(posiciones[-1]):
-            if i+1 == posiciones[posiciones.index(i)+1]:
-                posiciones.remove(i+1)
+            if i+12 == posiciones[posiciones.index(i)+1]:
+                posiciones.remove(i+12)
+            elif i+13 ==posiciones[posiciones.index(i)+1]:
+                posiciones.remove(i+13)
+            elif i+14 ==posiciones[posiciones.index(i)+1]:
+                posiciones.remove(i+14)
+            elif i+15 ==posiciones[posiciones.index(i)+1]:
+                posiciones.remove(i+15)
+
+
+
+
     
     eventos = []
 
@@ -32,9 +104,28 @@ def separar_por_lineas(txt):
         if i < posiciones[-1]:
            eventos.append(txt[i:posiciones[posiciones.index(i) + 1]])
 
+    for i in range(len(eventos)):
+        print(eventos[i])
+        bits = eventos[i].split(" ")
+        n_uppercase = []
+        for j in range(len(bits)):
+            for k in range(len(bits[j][1:])):
+                if bits[j][1:][k].isupper():
+                    if bits[j][k].islower() or bits[j][k].isdigit() or bits[j][k] == "C" or bits[j][k] == ")":
+                        bits[j] = bits[j][0:k+1] + " " +bits[j][k+1:]
+        eventos[i] = " ".join(bits).strip(" ")
+
+
+
+        eventos[i] = dividir_en_categorias(eventos[i])
+
+                       
+    print("-----------eventos------------")
+    #print(eventos)
     return eventos
 
 def calibrar_fecha(txt):
+    #print(txt)
     #pasar de 'lun 3-ene-22' a '2022 1 3'
     meses = [("ene", 1),
             ("feb", 2),
@@ -74,12 +165,23 @@ def ordenar_eventos(eventos):
     #Descripción:
     #Comunidad:
     ordenados = []
+#    print(eventos)
     for date in eventos:
 #        print(date)
         descripcion = ""
         if date[1][0:3] in ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]:
             #En las líneas de Estudiante de Intercambio UC se generan
             #dos strings separados, esto lo corrige
+
+#            #debug
+#            print(date)
+#            print("----------")
+#            print("----------")
+#            print(date[0])
+#            print(date==eventos[0])
+#            print("----------")
+#            #debug
+
             if date[2] == "Estudiante de ": 
                 comunidad = date[2] + date[3]
 
@@ -149,6 +251,7 @@ def generar_calendario_simple(calendar):
     
                 inicio = evento["inicio"]
                 fin = evento["fin"]
+                #print(fin)
                 summary = evento["descripcion"]
     
                 carrito_inicio.add("dtstart", date(int(inicio[0]), int(inicio[1]), int(inicio[2])))
@@ -204,15 +307,15 @@ def generar_calendario_completo(calendar):
     return lista_calendarios
 
 def traducir_pdf(calendario):
-    fileReader = PyPDF2.PdfFileReader(calendario)
+    fileReader = PyPDF2.PdfReader(calendario)
+#    print(fileReader)
     
     calendario_nice = []
     
-    print(fileReader.numPages)
-    for i in range(0,fileReader.numPages):
-        pagina = fileReader.getPage(i)
-        crudo = pagina.extractText().split("\n")
-        eventos_obtenidos = separar_por_lineas(crudo)
+    for i in range(0,len(fileReader.pages)):
+        pagina = fileReader.pages[i]
+        crudo = pagina.extract_text().split("\n")
+        eventos_obtenidos = corregir_lineas(crudo)
         eventos_obtenidos = ordenar_eventos(eventos_obtenidos)
         calendario_nice.extend(eventos_obtenidos)
         print(f"Se exportó la página {i+1}")
